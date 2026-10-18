@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: instaauto-backend
+    env: node
+    plan: free
+    rootDir: instagram-auto-reply
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES
+        value: 7d
+      - key: VERIFY_TOKEN
+        sync: false
+      - key: INSTAGRAM_APP_ID
+        sync: false
+      - key: INSTAGRAM_APP_SECRET
+        sync: false
+      - key: INSTAGRAM_REDIRECT_URI
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
+      - key: FRONTEND_DEEP_LINK
+        value: instauto://oauth-callback
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      - key: DRY_RUN
+        value: "false"
+      - key: ENABLE_PUBLIC_REPLY
+        value: "true"
+      - key: ENABLE_PRIVATE_REPLY
+        value: "true"
