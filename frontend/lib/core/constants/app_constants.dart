@@ -5,8 +5,8 @@ import 'dart:io' show Platform;
 /// Never put real secrets here — use .env on the backend.
 class AppConstants {
   // ── API ─────────────────────────────────────────────────────────────────────
-  /// Production online backend URL (via ngrok tunnel or deployed cloud host)
-  static const String remoteUrl = 'https://hunting-imprudent-limb.ngrok-free.dev';
+  /// Production online backend URL (hosted on Render)
+  static const String remoteUrl = 'https://insta-auto-my00.onrender.com';
 
   /// Dynamically resolved base URL based on platform.
   static String get baseUrl {

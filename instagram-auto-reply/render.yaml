@@ -25,9 +25,9 @@ services:
       - key: INSTAGRAM_APP_SECRET
         sync: false
       - key: INSTAGRAM_REDIRECT_URI
-        sync: false
+        value: https://insta-auto-my00.onrender.com/auth/instagram/callback
       - key: APP_BASE_URL
-        sync: false
+        value: https://insta-auto-my00.onrender.com
       - key: FRONTEND_DEEP_LINK
         value: instauto://oauth-callback
       - key: ALLOWED_ORIGINS
