@@ -1,6 +1,4 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:device_preview/device_preview.dart';
 import 'package:provider/provider.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/auth_provider.dart';
@@ -19,16 +17,13 @@ void main() async {
   }
 
   runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => MultiProvider(
-        providers: [
-          ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-          ChangeNotifierProvider<AutomationProvider>(create: (_) => AutomationProvider()),
-          ChangeNotifierProvider<CommentProvider>(create: (_) => CommentProvider()),
-        ],
-        child: const InstaAutoApp(),
-      ),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+        ChangeNotifierProvider<AutomationProvider>(create: (_) => AutomationProvider()),
+        ChangeNotifierProvider<CommentProvider>(create: (_) => CommentProvider()),
+      ],
+      child: const InstaAutoApp(),
     ),
   );
 }
@@ -43,8 +38,6 @@ class InstaAutoApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
       routerConfig: appRouter,
-      locale: DevicePreview.locale(context),
-      builder: DevicePreview.appBuilder,
     );
   }
 }
