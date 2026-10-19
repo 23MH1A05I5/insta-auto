@@ -53,7 +53,10 @@ class AuthProvider extends ChangeNotifier {
       _status = AuthStatus.authenticated;
       return true;
     } on DioException catch (e) {
-      _error = e.response?.data?['error'] ?? 'Registration failed';
+      _error = e.response?.data?['error'] ?? (e.type == DioExceptionType.connectionError ? 'Cannot connect to server. Please check internet connection.' : 'Registration failed');
+      return false;
+    } catch (e) {
+      _error = 'Registration failed: $e';
       return false;
     } finally { _loading = false; notifyListeners(); }
   }
@@ -68,7 +71,10 @@ class AuthProvider extends ChangeNotifier {
       _status = AuthStatus.authenticated;
       return true;
     } on DioException catch (e) {
-      _error = e.response?.data?['error'] ?? 'Login failed';
+      _error = e.response?.data?['error'] ?? (e.type == DioExceptionType.connectionError ? 'Cannot connect to server. Please check internet connection.' : 'Invalid email or password');
+      return false;
+    } catch (e) {
+      _error = 'Login failed: $e';
       return false;
     } finally { _loading = false; notifyListeners(); }
   }

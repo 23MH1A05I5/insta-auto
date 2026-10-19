@@ -15,7 +15,8 @@ class AppConstants {
       if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
         return Uri.base.origin;
       }
-      return 'http://localhost:3000';
+      // Point directly to production Render backend so local web tests work out of the box
+      return remoteUrl;
     }
     try {
       if (Platform.isAndroid || Platform.isIOS) return remoteUrl;
