@@ -324,7 +324,278 @@ if (fs.existsSync(webBuildPath)) {
     }
   }));
 } else {
-  app.get("/", (req, res) => res.send("InstaAuto Server is running ✅"));
+  app.get("/", (req, res) => {
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InstaAuto Technologies — Automated Instagram Engagement & Direct Messaging</title>
+  <meta name="description" content="InstaAuto Technologies provides official, compliant automation for Instagram comment replies and private direct messages for creators and businesses.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0b0f19;
+      --card-bg: rgba(23, 32, 54, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-blue: #3b82f6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .gradient-mesh {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at 20% 15%, rgba(139, 92, 246, 0.18) 0%, transparent 45%),
+                  radial-gradient(circle at 80% 25%, rgba(236, 72, 153, 0.15) 0%, transparent 40%),
+                  radial-gradient(circle at 50% 80%, rgba(59, 130, 246, 0.12) 0%, transparent 50%);
+      z-index: -1;
+      pointer-events: none;
+    }
+    nav {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 24px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-weight: 800;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+    .logo-badge {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      color: #fff;
+    }
+    .nav-links { display: flex; gap: 20px; align-items: center; }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--text-main); }
+    .btn-outline {
+      padding: 8px 18px;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 999px;
+      color: var(--text-main) !important;
+      font-weight: 600;
+    }
+    .hero {
+      max-width: 900px;
+      margin: 60px auto 40px;
+      text-align: center;
+      padding: 0 20px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(139, 92, 246, 0.12);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #c084fc;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(34px, 5vw, 56px);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, #a78bfa, #f472b6, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto 36px;
+    }
+    .features-grid {
+      max-width: 1140px;
+      margin: 60px auto;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(139, 92, 246, 0.4);
+    }
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.25), rgba(236, 72, 153, 0.25));
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+    .feature-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .verification-box {
+      max-width: 900px;
+      margin: 20px auto 60px;
+      padding: 28px;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 16px;
+      text-align: center;
+    }
+    .verification-box h4 {
+      color: #34d399;
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .verification-box p {
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      background: rgba(11, 15, 25, 0.95);
+    }
+    footer .legal-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    footer .legal-links a {
+      color: #cbd5e1;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    footer .legal-links a:hover { color: #a78bfa; }
+    .badge-msme {
+      display: inline-block;
+      margin-top: 12px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="gradient-mesh"></div>
+  <nav>
+    <a href="/" class="logo">
+      <div class="logo-badge">⚡</div>
+      <span>InstaAuto</span>
+    </a>
+    <div class="nav-links">
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/terms">Terms</a>
+      <a href="/data-deletion">Data Deletion</a>
+      <a href="mailto:nandakumarmadugula@gmail.com" class="btn-outline">Contact Us</a>
+    </div>
+  </nav>
+
+  <main>
+    <section class="hero">
+      <div class="pill">⚡ Official Meta Graph API Integration</div>
+      <h1>Automate Instagram Engagement with <span>Precision & Trust</span></h1>
+      <p>InstaAuto Technologies provides compliant, automated comment responses and direct messaging tools designed for modern creators, digital entrepreneurs, and growing businesses.</p>
+    </section>
+
+    <div class="verification-box">
+      <h4>🏛️ Registered Micro-Enterprise (Govt. of India)</h4>
+      <p><strong>Enterprise Name:</strong> INSTAAUTO TECHNOLOGIES &bull; <strong>MSME Udyam:</strong> UDYAM-AP-17-0089286 &bull; <strong>Activity:</strong> Computer Programming & Software Services (NIC 62011)</p>
+    </div>
+
+    <section class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <h3>Instant Comment Auto-Reply</h3>
+        <p>Detect keyword triggers on reels and posts in real time. Deliver relevant, personalized responses to boost reach and engagement instantly.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📩</div>
+        <h3>Compliant Private Messaging</h3>
+        <p>Send direct messages triggered by comments in full adherence with Meta's 7-day conversation window and anti-spam rate limiting.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <h3>Meta Policy & Security First</h3>
+        <p>End-to-end HMAC SHA-256 webhook signature validation, zero unauthorized data retention, and instant user data deletion compliance.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="legal-links">
+      <a href="/privacy">Privacy Policy</a>
+      <a href="/terms">Terms of Service</a>
+      <a href="/data-deletion">User Data Deletion</a>
+      <a href="/health">System Status</a>
+    </div>
+    <p>&copy; 2026 INSTAAUTO TECHNOLOGIES. All rights reserved.</p>
+    <p class="badge-msme">Peddapuram, Kakinada District, Andhra Pradesh 533437, India &bull; Contact: nandakumarmadugula@gmail.com</p>
+  </footer>
+</body>
+</html>`);
+  });
 }
 
 // SPA Fallback for Flutter Web routes
