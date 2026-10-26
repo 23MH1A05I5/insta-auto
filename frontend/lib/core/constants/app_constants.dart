@@ -10,22 +10,59 @@ class AppConstants {
 
   /// Dynamically resolved base URL based on platform.
   static String get baseUrl {
+    const envUrl = String.fromEnvironment('API_BASE_URL');
+    if (envUrl.isNotEmpty) {
+      if (kReleaseMode && !envUrl.startsWith('https://')) {
+        debugPrint('⚠️ Insecure HTTP base URL rejected in release mode. Falling back to secure remoteUrl.');
+        return remoteUrl;
+      }
+      return envUrl;
+    }
+
+    if (kReleaseMode) {
+      return remoteUrl;
+    }
+
     if (kIsWeb) {
       final host = Uri.base.host;
-      if (host.isNotEmpty && host != 'localhost' && host != '127.0.0.1') {
+      if (host == 'localhost' || host == '127.0.0.1') {
+        return 'http://localhost:3000';
+      }
+      if (host.isNotEmpty && !host.contains('onrender.com')) {
         return Uri.base.origin;
       }
-      // Point directly to production Render backend so local web tests work out of the box
       return remoteUrl;
     }
     try {
-      if (Platform.isAndroid || Platform.isIOS) return remoteUrl;
+      if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        return 'http://localhost:3000';
+      }
+      if (Platform.isAndroid) {
+        return 'http://10.0.2.2:3000';
+      }
+      if (Platform.isIOS) {
+        return 'http://localhost:3000';
+      }
     } catch (_) {}
     return remoteUrl;
   }
 
-  static const Duration connectTimeout  = Duration(seconds: 15);
-  static const Duration receiveTimeout  = Duration(seconds: 30);
+  static const Duration connectTimeout  = Duration(seconds: 60);
+  static const Duration receiveTimeout  = Duration(seconds: 60);
+
+  // ── In-app updates ───────────────────────────────────────────────────────────
+  /// Trusted APK download hosts baked into the app at build time, e.g.
+  /// `flutter build apk --release --dart-define=APK_ALLOWED_HOSTS=downloads.example.com`.
+  /// When set, the backend's `allowedHosts` are ignored and ONLY these hosts are
+  /// accepted. When empty, the app falls back to the host list the backend sends.
+  static List<String> get apkTrustedHosts {
+    const raw = String.fromEnvironment('APK_ALLOWED_HOSTS');
+    return raw
+        .split(',')
+        .map((h) => h.trim().toLowerCase())
+        .where((h) => h.isNotEmpty)
+        .toList(growable: false);
+  }
 
   // ── Storage Keys ─────────────────────────────────────────────────────────────
   static const String kAuthToken  = 'auth_token';

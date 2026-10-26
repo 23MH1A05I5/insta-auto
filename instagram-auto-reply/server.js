@@ -77,6 +77,9 @@ app.use("/api/automations", require("./routes/automations"));
 app.use("/api/activity", require("./routes/activity"));
 app.use("/api/analytics", require("./routes/activity"));
 
+// In-app APK update metadata (public, no-cache)
+app.use("/api/app-update", require("./routes/appUpdate"));
+
 // Meta Webhook endpoint (GET handshake verification & POST realtime event ingestion)
 app.use("/webhook", require("./routes/webhook"));
 
@@ -205,7 +208,7 @@ app.post("/data-deletion-callback", async (req, res) => {
   if (igUserId) {
     try {
       const User = require("./models/User");
-      const Activity = require("./models/Activity");
+      const Automation = require("./models/Automation");
       // Clear Instagram token and data
       await User.updateMany(
         { "instagram.userId": igUserId },
@@ -218,8 +221,8 @@ app.post("/data-deletion-callback", async (req, res) => {
           },
         }
       );
-      // Delete activity logs for this IG user
-      await Activity.deleteMany({ igUserId });
+      // Delete automations and their embedded activity logs for this IG user
+      await Automation.deleteMany({ igUserId });
       console.log(`[DataDeletion] Deleted data for IG user ${igUserId}`);
     } catch (e) {
       console.error("[DataDeletion] DB error:", e.message);
@@ -305,6 +308,12 @@ app.get("/meta-review-info", (req, res) => {
 });
 
 app.get("/download-apk", (req, res) => {
+  // Prefer the published, checksum-verified release in object storage.
+  const releaseCfg = require("./config/appRelease").loadReleaseConfig(process.env);
+  if (releaseCfg.ok) {
+    res.setHeader("Cache-Control", "no-store");
+    return res.redirect(302, releaseCfg.release.apkUrl);
+  }
   const debugApk = path.join(__dirname, "../frontend/build/app/outputs/flutter-apk/app-debug.apk");
   const releaseApk = path.join(__dirname, "../frontend/build/app/outputs/flutter-apk/app-release.apk");
   if (fs.existsSync(debugApk)) return res.download(debugApk, "InstaAuto.apk");

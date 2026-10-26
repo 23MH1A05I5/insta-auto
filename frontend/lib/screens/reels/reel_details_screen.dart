@@ -114,6 +114,19 @@ class _ReelDetailsScreenState extends State<ReelDetailsScreen> {
                 context.push('/reels/${media.id}/comments', extra: media);
               },
             ),
+            _ActionTile(
+              icon: Icons.history_rounded,
+              iconColor: AppColors.primary,
+              title: 'Process Existing Comments',
+              subtitle: 'Run automation on past comments',
+              trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textHint),
+              onTap: () {
+                context.push('/reels/${media.id}/backfill', extra: {
+                  'media': media,
+                  'automation': existingAuto,
+                });
+              },
+            ),
             if (existingAuto != null)
               _ActionTile(
                 icon: Icons.check_circle_rounded,
@@ -244,7 +257,7 @@ class _MediaThumbnail extends StatelessWidget {
             Center(
               child: Container(
                 width: 60, height: 60,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: Colors.black45,
                   shape: BoxShape.circle,
                 ),
@@ -352,7 +365,7 @@ class _ActionTile extends StatelessWidget {
       leading: Container(
         width: 42, height: 42,
         decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.12),
+          color: iconColor.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(icon, color: iconColor, size: 22),

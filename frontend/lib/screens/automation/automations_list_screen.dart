@@ -6,6 +6,7 @@ import '../../models/automation_model.dart';
 import '../../providers/automation_provider.dart';
 import '../../widgets/automation/automation_widgets.dart';
 import '../../widgets/common/common_widgets.dart';
+import '../../widgets/common/app_bottom_nav_bar.dart';
 
 class AutomationsListScreen extends StatefulWidget {
   const AutomationsListScreen({super.key});
@@ -90,17 +91,13 @@ class _AutomationsListScreenState extends State<AutomationsListScreen> with Sing
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('All Automations'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/dashboard');
-            }
-          },
-        ),
+        title: const Text('Keyword Automations'),
+        leading: context.canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios),
+                onPressed: () => context.pop(),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -176,6 +173,7 @@ class _AutomationsListScreenState extends State<AutomationsListScreen> with Sing
           context.push('/automation/select-post');
         },
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 2),
     );
   }
 

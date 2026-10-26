@@ -37,6 +37,12 @@ module.exports = {
     MAX_MEDIA_COMMENTS_FETCH_LIMIT: 100,        // Max allowed per comments request
   },
 
+  // ── Retry Rules & Safety ──────────────────────────────────────────────────
+  RETRY_RULES: {
+    MAX_DM_RETRIES: 3,                          // Maximum safe retry attempts for transient DM failures
+    RETRY_LOCK_TIMEOUT_MS: 60 * 1000,           // 60s processing lock timeout for retries
+  },
+
   // ── Meta Graph API Error Codes Classification ──────────────────────────────
   ERROR_CODES: {
     TOKEN_EXPIRED: [190, 463, 467],             // OAuth token expired or invalidated
@@ -45,5 +51,6 @@ module.exports = {
     PERMISSION_DENIED: [10, 200],               // Missing required permission scope
     PRIVATE_REPLY_WINDOW_CLOSED: [100],         // Comment older than 7 days or already replied
     PRIVATE_REPLY_SUBCODES: [2018001],          // Subcode for comment older than 7 days
+    ALREADY_REPLIED_SUBCODES: [2018002],        // Subcode for already replied to this comment
   },
 };

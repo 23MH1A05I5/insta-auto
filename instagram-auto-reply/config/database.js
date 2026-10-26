@@ -20,6 +20,15 @@ const connectDatabase = async () => {
     console.log(`✅ MongoDB connected successfully: ${sanitized}`);
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
+    if (MONGO_URI !== "mongodb://127.0.0.1:27017/instauto") {
+      try {
+        console.log("🔄 Attempting fallback to local MongoDB (mongodb://127.0.0.1:27017/instauto)...");
+        await mongoose.connect("mongodb://127.0.0.1:27017/instauto");
+        console.log("✅ Fallback local MongoDB connected successfully.");
+      } catch (localErr) {
+        console.error("❌ Local MongoDB fallback also failed:", localErr.message);
+      }
+    }
   }
 
   mongoose.connection.on("error", (err) => {

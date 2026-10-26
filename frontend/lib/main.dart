@@ -6,6 +6,8 @@ import 'providers/automation_provider.dart';
 import 'providers/comment_provider.dart';
 import 'routes/app_router.dart';
 
+import 'services/app_updater.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -22,6 +24,7 @@ void main() async {
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<AutomationProvider>(create: (_) => AutomationProvider()),
         ChangeNotifierProvider<CommentProvider>(create: (_) => CommentProvider()),
+        ChangeNotifierProvider<AppUpdaterService>(create: (_) => AppUpdaterService()),
       ],
       child: const InstaAutoApp(),
     ),

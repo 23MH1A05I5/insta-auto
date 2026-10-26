@@ -1,6 +1,8 @@
 const router = require("express").Router();
 const crypto = require("crypto");
 const User = require("../models/User");
+const ActionLedger = require("../models/ActionLedger");
+const Automation = require("../models/Automation");
 const { authenticate } = require("../middleware/auth");
 const InstagramService = require("../services/instagramService");
 const AiReplyService = require("../services/aiReplyService");
@@ -284,6 +286,88 @@ router.get("/media/:mediaId/comments", authenticate, async (req, res) => {
     const msg = result.error?.message || (typeof result.error === "string" ? result.error : "Failed to fetch comments");
     return res.status(400).json({ ok: false, error: msg, details: result.error });
   }
+
+  // Enrich comments with action ledger & automation activity statuses
+  try {
+    const rawComments = Array.isArray(result.comments) ? result.comments : [];
+    const commentIds = rawComments.map((c) => c.id).filter(Boolean);
+
+    if (commentIds.length > 0) {
+      const [ledgers, userAutomations] = await Promise.all([
+        ActionLedger.find({ commentId: { $in: commentIds } }).lean().catch(() => []),
+        Automation.find({ userId: req.user._id, mediaId: req.params.mediaId })
+          .select("activityLog openingDm publicReply")
+          .lean()
+          .catch(() => []),
+      ]);
+
+      const now = Date.now();
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+      result.comments = rawComments.map((c) => {
+        const commentObj = { ...c };
+        const dmLedger = ledgers.find((l) => l.commentId === c.id && l.actionType === "dm");
+        const pubLedger = ledgers.find((l) => l.commentId === c.id && l.actionType === "public_reply");
+
+        // Find in automation activityLog
+        let actEntry = null;
+        for (const auto of userAutomations) {
+          const found = (auto.activityLog || []).find((log) => log.commentId === c.id);
+          if (found) {
+            actEntry = found;
+            break;
+          }
+        }
+
+        const commentTime = c.timestamp ? new Date(c.timestamp).getTime() : null;
+        const isOlderThan7Days = commentTime && !isNaN(commentTime) ? now - commentTime > SEVEN_DAYS_MS : false;
+
+        // Check if DM was already sent
+        const dmAlreadySent = dmLedger?.status === "sent" || actEntry?.privateReply?.sent || actEntry?.privateReply?.status === "sent";
+
+        let isEligibleForDm = true;
+        let dmIneligibleReason = null;
+
+        if (dmAlreadySent) {
+          isEligibleForDm = false;
+          dmIneligibleReason = "A private DM has already been sent to this user for this comment.";
+        } else if (isOlderThan7Days) {
+          isEligibleForDm = false;
+          dmIneligibleReason = "Meta messaging policy: Comments older than 7 days cannot receive private DMs.";
+        }
+
+        const pubStatus = pubLedger?.status || actEntry?.publicReply?.status || (c.replies?.data?.length > 0 ? "sent" : "none");
+        let dmStatus = dmLedger?.status || actEntry?.privateReply?.status || (dmAlreadySent ? "sent" : (isEligibleForDm ? "none" : "ineligible"));
+
+        commentObj.publicReplyStatus = pubStatus;
+        commentObj.dmStatus = dmStatus;
+        commentObj.isEligibleForDm = isEligibleForDm;
+        commentObj.dmIneligibleReason = dmIneligibleReason;
+
+        if (dmLedger) {
+          commentObj.actionLedger = {
+            ok: true,
+            actionId: dmLedger._id?.toString(),
+            commentId: dmLedger.commentId,
+            mediaId: dmLedger.mediaId,
+            actionType: dmLedger.actionType,
+            status: dmLedger.status,
+            reason: dmLedger.skipReason || dmLedger.error,
+            retryable: Boolean(dmLedger.isRetryable),
+            messageId: dmLedger.messageId,
+            sentAt: dmLedger.sentAt || dmLedger.createdAt,
+            reconciliationRequired: Boolean(dmLedger.isAmbiguous),
+            updatedAt: dmLedger.updatedAt,
+          };
+        }
+
+        return commentObj;
+      });
+    }
+  } catch (enrichErr) {
+    console.warn("⚠️ [Comment Enrich Warning]:", enrichErr.message);
+  }
+
   return res.json(result);
 });
 

@@ -8,6 +8,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/automation_provider.dart';
 import '../../providers/comment_provider.dart';
 import '../../widgets/common/common_widgets.dart';
+import '../../widgets/common/app_bottom_nav_bar.dart';
 
 class AllReelsScreen extends StatefulWidget {
   const AllReelsScreen({super.key});
@@ -56,17 +57,13 @@ class _AllReelsScreenState extends State<AllReelsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('All Reels & Posts'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/dashboard');
-            }
-          },
-        ),
+        title: const Text('Posts & Reels'),
+        leading: context.canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                onPressed: () => context.pop(),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -234,7 +231,7 @@ class _AllReelsScreenState extends State<AllReelsScreen> {
                                               Container(
                                                 padding: const EdgeInsets.all(3),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.black.withOpacity(0.6),
+                                                  color: Colors.black.withValues(alpha: 0.6),
                                                   borderRadius: BorderRadius.circular(4),
                                                 ),
                                                 child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 12),
@@ -272,7 +269,7 @@ class _AllReelsScreenState extends State<AllReelsScreen> {
                                               begin: Alignment.bottomCenter,
                                               end: Alignment.topCenter,
                                               colors: [
-                                                Colors.black.withOpacity(0.75),
+                                                Colors.black.withValues(alpha: 0.75),
                                                 Colors.transparent,
                                               ],
                                             ),
@@ -320,6 +317,7 @@ class _AllReelsScreenState extends State<AllReelsScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 1),
     );
   }
 
@@ -328,7 +326,7 @@ class _AllReelsScreenState extends State<AllReelsScreen> {
     return ChoiceChip(
       label: Text(label, style: TextStyle(fontSize: 12, fontWeight: selected ? FontWeight.w700 : FontWeight.w500)),
       selected: selected,
-      selectedColor: AppColors.primary.withOpacity(0.15),
+      selectedColor: AppColors.primary.withValues(alpha: 0.15),
       labelStyle: TextStyle(color: selected ? AppColors.primary : AppColors.textSecondary),
       side: BorderSide(color: selected ? AppColors.primary : AppColors.border),
       onSelected: (_) => setState(() => _filter = key),

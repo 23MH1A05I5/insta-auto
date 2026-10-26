@@ -12,6 +12,8 @@ import '../screens/automation/preview_automation_screen.dart';
 import '../screens/automation/automations_list_screen.dart';
 import '../screens/activity/activity_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../models/automation_model.dart';
+import '../screens/automation/backfill_comments_screen.dart';
 import '../screens/reels/reel_details_screen.dart';
 import '../screens/reels/reel_comments_screen.dart';
 import '../screens/reels/all_reels_screen.dart';
@@ -75,6 +77,10 @@ final GoRouter appRouter = GoRouter(
       path: '/reels',
       builder: (context, state) => const AllReelsScreen(),
     ),
+    GoRoute(
+      path: '/posts',
+      builder: (context, state) => const AllReelsScreen(),
+    ),
     // ── Reels ──────────────────────────────────────────────────────────────────
     GoRoute(
       path: '/reels/:mediaId',
@@ -94,6 +100,20 @@ final GoRouter appRouter = GoRouter(
         final mediaId = state.pathParameters['mediaId']!;
         final media   = state.extra as InstagramMedia?;
         return ReelCommentsScreen(mediaId: mediaId, media: media);
+      },
+    ),
+    GoRoute(
+      path: '/reels/:mediaId/backfill',
+      builder: (context, state) {
+        final mediaId = state.pathParameters['mediaId']!;
+        final extra = state.extra as Map<String, dynamic>?;
+        final media = extra?['media'] as InstagramMedia?;
+        final automation = extra?['automation'] as Automation?;
+        return BackfillCommentsScreen(
+          mediaId: mediaId,
+          media: media,
+          automation: automation,
+        );
       },
     ),
   ],

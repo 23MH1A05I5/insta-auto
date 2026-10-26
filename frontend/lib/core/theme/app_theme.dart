@@ -143,7 +143,7 @@ class AppTheme {
       dividerTheme: const DividerThemeData(color: AppColors.border, thickness: 1),
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.panelGray,
-        selectedColor: AppColors.primary.withOpacity(0.15),
+        selectedColor: AppColors.primary.withValues(alpha: 0.15),
         labelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500),
         side: const BorderSide(color: AppColors.border),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -153,7 +153,7 @@ class AppTheme {
         thumbColor: WidgetStateProperty.resolveWith((states) =>
             states.contains(WidgetState.selected) ? AppColors.primary : Colors.white),
         trackColor: WidgetStateProperty.resolveWith((states) =>
-            states.contains(WidgetState.selected) ? AppColors.primary.withOpacity(0.3) : AppColors.border),
+            states.contains(WidgetState.selected) ? AppColors.primary.withValues(alpha: 0.3) : AppColors.border),
       ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.textPrimary,

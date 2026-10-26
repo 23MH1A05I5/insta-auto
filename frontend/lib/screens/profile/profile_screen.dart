@@ -9,6 +9,9 @@ import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../core/constants/app_constants.dart';
 import '../../widgets/common/common_widgets.dart';
+import '../../services/app_updater.dart';
+import '../../widgets/update/update_dialog.dart';
+import '../../widgets/common/app_bottom_nav_bar.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -154,7 +157,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
+                                color: AppColors.primary.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: const Icon(Icons.lock_reset, color: AppColors.primary, size: 20),
@@ -188,9 +191,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       padding: const EdgeInsets.all(10),
                       margin: const EdgeInsets.only(bottom: 14),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.08),
+                        color: AppColors.error.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         children: [
@@ -291,26 +294,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       });
 
                       final auth = context.read<AuthProvider>();
+                      final navigator = Navigator.of(ctx);
+                      final messenger = ScaffoldMessenger.of(context);
+
                       final success = await auth.changePassword(
                         currentCtrl.text.trim(),
                         newCtrl.text.trim(),
                       );
 
-                      if (mounted) {
-                        if (success) {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Password updated successfully! 🔒'),
-                              backgroundColor: AppColors.success,
-                            ),
-                          );
-                        } else {
-                          setModalState(() {
-                            isSubmitting = false;
-                            localError = auth.error ?? 'Failed to update password. Please check your current password.';
-                          });
-                        }
+                      if (success) {
+                        navigator.pop();
+                        messenger.showSnackBar(
+                          const SnackBar(
+                            content: Text('Password updated successfully! 🔒'),
+                            backgroundColor: AppColors.success,
+                          ),
+                        );
+                      } else {
+                        setModalState(() {
+                          isSubmitting = false;
+                          localError = auth.error ?? 'Failed to update password. Please check your current password.';
+                        });
                       }
                     },
                   ),
@@ -374,10 +378,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   final text = nameCtrl.text.trim();
                   if (text.isEmpty) return;
                   setModalState(() => isSaving = true);
+                  final navigator = Navigator.of(ctx);
+                  final messenger = ScaffoldMessenger.of(context);
                   final ok = await context.read<AuthProvider>().updateProfile(text);
-                  if (mounted && ok) {
-                    Navigator.pop(ctx);
-                    ScaffoldMessenger.of(context).showSnackBar(
+                  if (ok) {
+                    navigator.pop();
+                    messenger.showSnackBar(
                       const SnackBar(content: Text('Profile name updated! ✨'), backgroundColor: AppColors.success),
                     );
                   } else {
@@ -416,7 +422,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                        decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                         child: const Icon(Icons.verified_outlined, color: AppColors.primary, size: 20),
                       ),
                       const SizedBox(width: 10),
@@ -501,7 +507,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(color: AppColors.info.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                        decoration: BoxDecoration(color: AppColors.info.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                         child: const Icon(Icons.help_outline, color: AppColors.info, size: 20),
                       ),
                       const SizedBox(width: 10),
@@ -533,6 +539,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _checkForUpdatesManual() async {
+    final updater = context.read<AppUpdaterService>();
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            ),
+            SizedBox(width: 12),
+            Text('Checking for app updates...'),
+          ],
+        ),
+        duration: Duration(seconds: 2),
+      ),
+    );
+
+    final release = await updater.checkForUpdate(silent: false);
+    if (!mounted) return;
+    messenger.hideCurrentSnackBar();
+
+    if (release != null && updater.isUpdateAvailable) {
+      UpdateDialog.show(context, updater);
+    } else if (updater.status == UpdateStatus.upToDate) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text("You're using the latest version of InstaAuto! 🎉"),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } else if (updater.errorMessage != null) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(updater.errorMessage!),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
   }
 
   Future<void> _clearCache() async {
@@ -567,20 +616,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirm == true && mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      final auth = context.read<AuthProvider>();
       try {
         await _api.disconnectInstagram();
-        if (mounted) {
-          await context.read<AuthProvider>().refreshUser();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Instagram account disconnected')),
-          );
-        }
+        await auth.refreshUser();
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Instagram account disconnected')),
+        );
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to disconnect: $e'), backgroundColor: AppColors.error),
-          );
-        }
+        messenger.showSnackBar(
+          SnackBar(content: Text('Failed to disconnect: $e'), backgroundColor: AppColors.error),
+        );
       }
     }
   }
@@ -605,16 +652,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirm == true && mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      final auth = context.read<AuthProvider>();
       try {
         await _api.deleteAccount();
-        await context.read<AuthProvider>().logout();
+        await auth.logout();
         if (mounted) context.go('/login');
       } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to delete account: $e'), backgroundColor: AppColors.error),
-          );
-        }
+        messenger.showSnackBar(
+          SnackBar(content: Text('Failed to delete account: $e'), backgroundColor: AppColors.error),
+        );
       }
     }
   }
@@ -658,18 +705,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Account & Settings'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-          color: AppColors.textPrimary,
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/dashboard');
-            }
-          },
-        ),
+        title: const Text('Profile & Settings'),
+        leading: context.canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                color: AppColors.textPrimary,
+                onPressed: () => context.pop(),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
@@ -696,7 +739,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.border),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 8, offset: const Offset(0, 2)),
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2)),
                 ],
               ),
               child: Row(
@@ -918,7 +961,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     title: const Text('Anti-Spam Delay (Jitter)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                     subtitle: const Text('Random 2-4.5s delay to keep automations 100% Meta compliant',
                         style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
@@ -931,7 +974,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     title: const Text('Comment Activity Alerts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                     subtitle: const Text('Notify when incoming comments trigger an automated reply',
                         style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
@@ -944,7 +987,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     title: const Text('DM Delivery Confirmations', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                     subtitle: const Text('Alert when a private link message is delivered to user',
                         style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
@@ -957,7 +1000,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const Divider(height: 1),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     title: const Text('Auto-Refresh Metrics', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                     subtitle: const Text('Keep recent automations and comments synced periodically',
                         style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
@@ -978,6 +1021,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               subtitle: 'Free memory and manage cached assets',
               child: Column(
                 children: [
+                  _SettingsActionTile(
+                    icon: Icons.system_update_alt_rounded,
+                    iconColor: AppColors.primary,
+                    title: 'Check for Updates',
+                    subtitle: 'Check for new releases and install directly in-app',
+                    onTap: _checkForUpdatesManual,
+                  ),
+                  const Divider(height: 1),
                   _SettingsActionTile(
                     icon: Icons.cleaning_services_outlined,
                     iconColor: AppColors.warning,
@@ -1084,6 +1135,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 4),
     );
   }
 
@@ -1147,7 +1199,7 @@ class _SettingsActionTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: iconColor.withOpacity(0.1),
+                color: iconColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: iconColor, size: 20),

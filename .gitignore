@@ -25,3 +25,11 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Archives (Never commit zips/tarballs)
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+

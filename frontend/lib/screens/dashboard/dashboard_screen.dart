@@ -12,6 +12,9 @@ import '../../widgets/common/common_widgets.dart';
 import '../../models/automation_model.dart';
 import '../../models/user_model.dart';
 import '../../models/instagram_media.dart';
+import '../../services/app_updater.dart';
+import '../../widgets/update/update_dialog.dart';
+import '../../widgets/common/app_bottom_nav_bar.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -21,11 +24,15 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   Timer? _dashboardTimer;
+  static bool _hasCheckedUpdateThisSession = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refresh();
+      _checkInAppUpdate();
+    });
 
     // Auto-refresh dashboard stats & recent activity every 30 seconds silently
     _dashboardTimer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -54,6 +61,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ]);
   }
 
+  Future<void> _checkInAppUpdate() async {
+    if (_hasCheckedUpdateThisSession) return;
+    _hasCheckedUpdateThisSession = true;
+
+    try {
+      final updater = context.read<AppUpdaterService>();
+      final release = await updater.checkForUpdate(silent: true);
+      if (!mounted) return;
+
+      if (release != null && updater.isUpdateAvailable) {
+        UpdateDialog.show(context, updater);
+      }
+    } catch (_) {}
+  }
+
   Future<void> _disconnectInstagram() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -74,17 +96,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     if (confirm == true && mounted) {
+      final messenger = ScaffoldMessenger.of(context);
+      final auth = context.read<AuthProvider>();
       try {
         await ApiService().disconnectInstagram();
         if (mounted) {
-          await context.read<AuthProvider>().refreshUser();
-          ScaffoldMessenger.of(context).showSnackBar(
+          await auth.refreshUser();
+          messenger.showSnackBar(
             const SnackBar(content: Text('Instagram account disconnected'), backgroundColor: AppColors.warning),
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          messenger.showSnackBar(
             SnackBar(content: Text('Failed to disconnect: $e'), backgroundColor: AppColors.error),
           );
         }
@@ -110,6 +134,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     if (confirm == true && mounted) {
+      context.read<AutomationProvider>().reset();
+      context.read<CommentProvider>().reset();
       await context.read<AuthProvider>().logout();
       if (mounted) context.go('/login');
     }
@@ -148,7 +174,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         children: [
                           Container(
                             width: 44, height: 44,
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
                             child: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
                           ),
                           const SizedBox(width: 12),
@@ -218,11 +244,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ),
-              title: Row(
+              title: const Row(
                 children: [
-                  const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  const Text('InstaAuto', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                  Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text('InstaAuto', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
                 ],
               ),
               titleSpacing: 20,
@@ -290,51 +316,110 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
 
                     // ── Stats Grid ────────────────────────────────────
-                    const Text('Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Overview', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                        TextButton(
+                          onPressed: () => context.push('/activity'),
+                          child: const Text('View Activity', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     GridView.count(
                       crossAxisCount: 2,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 1.18,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 1.25,
                       children: [
                         _ClickableStatCard(
-                          label: 'Comments',
+                          label: 'Comments Processed',
                           value: '${analytics?.commentsReceived ?? 0}',
-                          subtitle: '18 unanswered',
+                          subtitle: 'Total inbound',
                           icon: Icons.chat_bubble_outline_rounded,
                           color: AppColors.info,
                           onTap: () => context.push('/activity'),
                         ),
                         _ClickableStatCard(
-                          label: 'Replies Sent',
-                          value: '${analytics?.repliesSent ?? 0}',
-                          subtitle: 'This week',
+                          label: 'Active Automations',
+                          value: '${analytics?.activeAutomations ?? autoP.automations.where((a) => a.isActive).length}',
+                          subtitle: 'Running rules',
+                          icon: Icons.auto_awesome_rounded,
+                          color: AppColors.primary,
+                          onTap: () => context.push('/automations'),
+                        ),
+                        _ClickableStatCard(
+                          label: 'Confirmed Replies',
+                          value: '${analytics?.confirmedReplies ?? analytics?.repliesSent ?? 0}',
+                          subtitle: 'Public comments',
                           icon: Icons.reply_rounded,
                           color: AppColors.success,
                           onTap: () => context.push('/activity'),
                         ),
                         _ClickableStatCard(
-                          label: 'DMs Sent',
-                          value: '${analytics?.dmsSent ?? 0}',
-                          subtitle: 'This week',
+                          label: 'Confirmed DMs',
+                          value: '${analytics?.confirmedDms ?? analytics?.dmsSent ?? 0}',
+                          subtitle: 'Delivered to inbox',
                           icon: Icons.send_outlined,
-                          color: AppColors.warning,
+                          color: AppColors.secondary,
                           onTap: () => context.push('/activity'),
                         ),
                         _ClickableStatCard(
-                          label: 'Active Bots',
-                          value: '${analytics?.activeAutomations ?? 0}',
-                          subtitle: 'All running',
-                          icon: Icons.smart_toy_outlined,
-                          color: AppColors.primary,
-                          onTap: () => context.push('/automations'),
+                          label: 'Failed Actions',
+                          value: '${analytics?.failed ?? 0}',
+                          subtitle: (analytics?.failed ?? 0) > 0 ? 'Action required' : 'All delivered',
+                          icon: Icons.error_outline_rounded,
+                          color: (analytics?.failed ?? 0) > 0 ? AppColors.error : AppColors.success,
+                          onTap: () => context.push('/activity'),
+                        ),
+                        _ClickableStatCard(
+                          label: 'Skipped & Pending',
+                          value: '${(analytics?.skippedActions ?? 0) + (analytics?.pendingActions ?? 0)}',
+                          subtitle: '${analytics?.skippedActions ?? 0} skipped • ${analytics?.pendingActions ?? 0} pending',
+                          icon: Icons.hourglass_empty_rounded,
+                          color: AppColors.warning,
+                          onTap: () => context.push('/activity'),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+
+                    // ── Primary Action Shortcuts ───────────────────────
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.grid_view_rounded, size: 18),
+                            label: const Text('View Posts', style: TextStyle(fontWeight: FontWeight.w700)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.primary,
+                              side: const BorderSide(color: AppColors.primary, width: 1.5),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => context.push('/reels'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            icon: const Icon(Icons.tune_rounded, size: 18),
+                            label: const Text('Automations', style: TextStyle(fontWeight: FontWeight.w700)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.textPrimary,
+                              side: const BorderSide(color: AppColors.border, width: 1.5),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () => context.push('/automations'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
 
                     // ── Create Automation CTA ─────────────────────────
                     GradientButton(
@@ -375,7 +460,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     if (autoP.loadingAutomations)
                       const Center(child: CircularProgressIndicator())
                     else if (autoP.automations.isEmpty)
-                      EmptyState(
+                      const EmptyState(
                         icon: Icons.auto_awesome_outlined,
                         title: 'No automations yet',
                         subtitle: 'Create your first automation to start replying to comments automatically.',
@@ -391,6 +476,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: const AppBottomNavBar(currentIndex: 0),
     );
   }
 }
@@ -402,15 +488,15 @@ class _ConnectInstagramBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [AppColors.warning.withOpacity(0.1), AppColors.warning.withOpacity(0.05)]),
+        gradient: LinearGradient(colors: [AppColors.warning.withValues(alpha: 0.1), AppColors.warning.withValues(alpha: 0.05)]),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.warning.withOpacity(0.4)),
+        border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
           Container(
             width: 44, height: 44,
-            decoration: BoxDecoration(color: AppColors.warning.withOpacity(0.15), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: AppColors.warning.withValues(alpha: 0.15), shape: BoxShape.circle),
             child: const Icon(Icons.link_off, color: AppColors.warning),
           ),
           const SizedBox(width: 12),
@@ -462,15 +548,15 @@ class _ConnectedAccountCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Row(
         children: [
           // Instagram-style gradient avatar
           Container(
             width: 44, height: 44,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
                 colors: [Color(0xFF833AB4), Color(0xFFFD1D1D), Color(0xFFFCB045)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -550,7 +636,7 @@ class _ClickableStatCard extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -560,7 +646,7 @@ class _ClickableStatCard extends StatelessWidget {
               children: [
                 Container(
                   width: 32, height: 32,
-                  decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
                   child: Icon(icon, color: color, size: 16),
                 ),
                 const Spacer(),
@@ -688,7 +774,7 @@ class _RecentReelsList extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Colors.black.withOpacity(0.65)],
+                          colors: [Colors.transparent, Colors.black.withValues(alpha: 0.65)],
                         ),
                       ),
                     ),
@@ -768,7 +854,7 @@ class _AutomationMiniCard extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: Row(
           children: [
@@ -786,7 +872,7 @@ class _AutomationMiniCard extends StatelessWidget {
             else
               Container(
                 width: 40, height: 40,
-                decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                 child: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 18),
               ),
             const SizedBox(width: 12),
@@ -824,7 +910,7 @@ class _AutomationMiniCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: automation.isActive ? AppColors.success.withOpacity(0.1) : AppColors.border,
+                color: automation.isActive ? AppColors.success.withValues(alpha: 0.1) : AppColors.border,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(

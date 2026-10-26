@@ -91,9 +91,9 @@ class _TriggerConfigScreenState extends State<TriggerConfigScreen> {
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isEditing ? AppColors.warning.withOpacity(0.12) : AppColors.primary.withOpacity(0.1),
+                color: isEditing ? AppColors.warning.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: isEditing ? Border.all(color: AppColors.warning.withOpacity(0.4)) : null,
+                border: isEditing ? Border.all(color: AppColors.warning.withValues(alpha: 0.4)) : null,
               ),
               child: Text(
                 isEditing ? 'Editing Mode' : 'Step 2 of 5',
@@ -250,9 +250,9 @@ class _TriggerConfigScreenState extends State<TriggerConfigScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.info.withOpacity(0.08),
+                    color: AppColors.info.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.info.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.info.withValues(alpha: 0.2)),
                   ),
                   child: const Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,7 +335,7 @@ class _OptionCard extends StatelessWidget {
             width: selected ? 2 : 1,
           ),
           boxShadow: selected
-              ? [BoxShadow(color: AppColors.primary.withOpacity(0.12), blurRadius: 8, offset: const Offset(0, 2))]
+              ? [BoxShadow(color: AppColors.primary.withValues(alpha: 0.12), blurRadius: 8, offset: const Offset(0, 2))]
               : [],
         ),
         child: Row(
@@ -344,7 +344,7 @@ class _OptionCard extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: selected ? AppColors.primary.withOpacity(0.12) : AppColors.panelGray,
+                color: selected ? AppColors.primary.withValues(alpha: 0.12) : AppColors.panelGray,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary, size: 20),

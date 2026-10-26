@@ -105,7 +105,7 @@ class _PreviewAutomationScreenState extends State<PreviewAutomationScreen> {
         ),
       );
     } else {
-      setState(() => _error = 'Failed to save automation. Please check your network and try again.');
+      setState(() => _error = provider.saveError ?? 'Failed to save automation. Please check your network and try again.');
     }
   }
 
@@ -193,7 +193,10 @@ class _PreviewAutomationScreenState extends State<PreviewAutomationScreen> {
                     hasTested = true;
                     if (matched) {
                       final rep = replies.messages.isNotEmpty ? replies.messages.first.replaceAll('@{username}', '@testuser') : 'No public reply configured';
-                      simResult = '✅ MATCH DETECTED!\n\n• Public Reply: "$rep"\n• DM Sent: "${dm.message}"\n• Button: "${dm.buttonText}"';
+                      final buttonInfo = (dm.buttonEnabled && dm.buttonText.isNotEmpty)
+                          ? '\n• Button: "${dm.buttonText}"\n• Link: "${dm.link}"'
+                          : '\n• Button: None (Text-only message)';
+                      simResult = '✅ MATCH DETECTED!\n\n• Public Reply: "$rep"\n• DM Sent: "${dm.message}"$buttonInfo';
                     } else {
                       simResult = '❌ NO MATCH. Keywords did not match this comment.';
                     }
@@ -250,9 +253,9 @@ class _PreviewAutomationScreenState extends State<PreviewAutomationScreen> {
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isEditing ? AppColors.warning.withOpacity(0.12) : AppColors.primary.withOpacity(0.1),
+                color: isEditing ? AppColors.warning.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: isEditing ? Border.all(color: AppColors.warning.withOpacity(0.4)) : null,
+                border: isEditing ? Border.all(color: AppColors.warning.withValues(alpha: 0.4)) : null,
               ),
               child: Text(
                 isEditing ? 'Editing Mode' : 'Step 5 of 5',
@@ -319,7 +322,7 @@ class _PreviewAutomationScreenState extends State<PreviewAutomationScreen> {
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: AppColors.primary.withOpacity(0.1),
+                                      color: AppColors.primary.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(6),
                                     ),
                                     child: Text(
@@ -364,11 +367,27 @@ class _PreviewAutomationScreenState extends State<PreviewAutomationScreen> {
                 AutomationPreviewCard(
                   title: 'Direct Message',
                   subtitle: dm.enabled
-                      ? 'CTA: "${dm.buttonText}" → Link: ${dm.link.isNotEmpty ? dm.link : "Default"}'
+                      ? ((dm.buttonEnabled && dm.buttonText.isNotEmpty)
+                          ? 'CTA: "${dm.buttonText}" → Link: ${dm.link.isNotEmpty ? dm.link : "Default"}'
+                          : 'Text-only message (No CTA button attached)')
                       : 'Disabled — no private DMs will be sent',
                   icon: Icons.send_outlined,
                   enabled: dm.enabled,
                   iconColor: dm.enabled ? AppColors.warning : null,
+                ),
+                const SizedBox(height: 16),
+
+                // Interactive Dry-Run Test Simulation Button
+                OutlinedButton.icon(
+                  onPressed: _showTestSimulationModal,
+                  icon: const Icon(Icons.science_outlined, size: 20),
+                  label: const Text('Test Simulation (Dry Run)'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
                 const SizedBox(height: 12),
               ],

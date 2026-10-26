@@ -156,9 +156,9 @@ class _RepliesConfigScreenState extends State<RepliesConfigScreen> {
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: isEditing ? AppColors.warning.withOpacity(0.12) : AppColors.primary.withOpacity(0.1),
+                color: isEditing ? AppColors.warning.withValues(alpha: 0.12) : AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: isEditing ? Border.all(color: AppColors.warning.withOpacity(0.4)) : null,
+                border: isEditing ? Border.all(color: AppColors.warning.withValues(alpha: 0.4)) : null,
               ),
               child: Text(
                 isEditing ? 'Editing Mode' : 'Step 3 of 5',
@@ -184,7 +184,7 @@ class _RepliesConfigScreenState extends State<RepliesConfigScreen> {
                   subtitle: 'Post a public reply under the comment on Instagram',
                   action: Switch(
                     value: _enabled,
-                    activeColor: AppColors.primary,
+                    activeThumbColor: AppColors.primary,
                     onChanged: (v) => setState(() => _enabled = v),
                   ),
                   child: Column(
@@ -194,7 +194,7 @@ class _RepliesConfigScreenState extends State<RepliesConfigScreen> {
                         const SizedBox(height: 8),
                         Text(
                           'Public reply is currently disabled. Only direct messages will be sent.',
-                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary.withOpacity(0.8)),
+                          style: TextStyle(fontSize: 13, color: AppColors.textSecondary.withValues(alpha: 0.8)),
                         ),
                       ] else ...[
                         const SizedBox(height: 12),
@@ -204,13 +204,13 @@ class _RepliesConfigScreenState extends State<RepliesConfigScreen> {
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: _controllers.length >= 3
-                                ? AppColors.success.withOpacity(0.08)
-                                : AppColors.warning.withOpacity(0.08),
+                                ? AppColors.success.withValues(alpha: 0.08)
+                                : AppColors.warning.withValues(alpha: 0.08),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: _controllers.length >= 3
-                                  ? AppColors.success.withOpacity(0.3)
-                                  : AppColors.warning.withOpacity(0.4),
+                                  ? AppColors.success.withValues(alpha: 0.3)
+                                  : AppColors.warning.withValues(alpha: 0.4),
                             ),
                           ),
                           child: Row(
@@ -242,9 +242,9 @@ class _RepliesConfigScreenState extends State<RepliesConfigScreen> {
                           margin: const EdgeInsets.only(bottom: 16),
                           padding: const EdgeInsets.all(14),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.06),
+                            color: AppColors.primary.withValues(alpha: 0.06),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,7 +327,7 @@ class _RepliesConfigScreenState extends State<RepliesConfigScreen> {
                                             width: 20,
                                             height: 20,
                                             decoration: BoxDecoration(
-                                              color: AppColors.primary.withOpacity(0.1),
+                                              color: AppColors.primary.withValues(alpha: 0.1),
                                               shape: BoxShape.circle,
                                             ),
                                             child: Center(
@@ -377,7 +377,7 @@ class _RepliesConfigScreenState extends State<RepliesConfigScreen> {
                             margin: const EdgeInsets.only(bottom: 16),
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: AppColors.panelGray.withOpacity(0.5),
+                              color: AppColors.panelGray.withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: AppColors.border),
                             ),
@@ -423,8 +423,8 @@ class _RepliesConfigScreenState extends State<RepliesConfigScreen> {
                                   children: [
                                     ActionChip(
                                       label: const Text('+ @{username}', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                                      backgroundColor: AppColors.primary.withOpacity(0.08),
-                                      side: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                                      backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                                      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.3)),
                                       labelStyle: const TextStyle(color: AppColors.primary),
                                       onPressed: () => _insertTag(idx, '@{username}'),
                                     ),
@@ -469,23 +469,23 @@ class _RepliesConfigScreenState extends State<RepliesConfigScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: AppColors.border),
                       boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2)),
+                        BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2)),
                       ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Commenter
-                        Row(
+                        const Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const CircleAvatar(
+                            CircleAvatar(
                               radius: 14,
                               backgroundColor: AppColors.panelGray,
                               child: Icon(Icons.person, size: 16, color: AppColors.textSecondary),
                             ),
-                            const SizedBox(width: 8),
-                            const Expanded(
+                            SizedBox(width: 8),
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [

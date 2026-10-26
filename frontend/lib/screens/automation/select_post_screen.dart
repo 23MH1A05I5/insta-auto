@@ -45,7 +45,7 @@ class _SelectPostScreenState extends State<SelectPostScreen> {
           Center(child: Container(
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(20)),
             child: const Text('Step 1 of 5', style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600)),
           )),
         ],
@@ -97,14 +97,14 @@ class _SelectPostScreenState extends State<SelectPostScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.08),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                     ),
-                    child: Row(children: [
-                      const Icon(Icons.check_circle, color: AppColors.primary, size: 18),
-                      const SizedBox(width: 8),
-                      const Expanded(child: Text('1 post selected — tap another to change',
+                    child: const Row(children: [
+                      Icon(Icons.check_circle, color: AppColors.primary, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(child: Text('1 post selected — tap another to change',
                           style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w500))),
                     ]),
                   ),
@@ -122,9 +122,9 @@ class _SelectPostScreenState extends State<SelectPostScreen> {
           // Bottom bar
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surface,
-              border: const Border(top: BorderSide(color: AppColors.border)),
+              border: Border(top: BorderSide(color: AppColors.border)),
             ),
             child: Row(
               children: [

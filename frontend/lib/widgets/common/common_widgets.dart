@@ -103,7 +103,7 @@ class GradientButton extends StatelessWidget {
           gradient: AppColors.primaryGradient,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 4)),
+            BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 12, offset: const Offset(0, 4)),
           ],
         ),
         child: Center(
@@ -150,7 +150,7 @@ class StatCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,7 +158,7 @@ class StatCard extends StatelessWidget {
         children: [
           Container(
             width: 32, height: 32,
-            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, color: color, size: 18),
           ),
           FittedBox(
@@ -318,7 +318,7 @@ class AutomationToggle extends StatelessWidget {
         if (icon != null) ...[
           Container(
             width: 36, height: 36,
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: AppColors.primary, size: 18),
           ),
           const SizedBox(width: 12),
@@ -354,7 +354,7 @@ class ShimmerCard extends StatelessWidget {
       height: height,
       width: width,
       decoration: BoxDecoration(
-        color: AppColors.border.withOpacity(0.5),
+        color: AppColors.border.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
     );
@@ -384,7 +384,7 @@ class EmptyState extends StatelessWidget {
           children: [
             Container(
               width: 80, height: 80,
-              decoration: BoxDecoration(color: AppColors.panelGray, shape: BoxShape.circle),
+              decoration: const BoxDecoration(color: AppColors.panelGray, shape: BoxShape.circle),
               child: Icon(icon, size: 40, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
@@ -420,9 +420,9 @@ class ErrorBanner extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.error.withOpacity(0.08),
+        color: AppColors.error.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+        border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

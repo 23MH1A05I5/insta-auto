@@ -76,7 +76,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(28),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 24, offset: const Offset(0, 8))],
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 24, offset: const Offset(0, 8))],
                     ),
                     child: const Icon(Icons.auto_awesome, size: 52, color: AppColors.primary),
                   ),
@@ -88,13 +88,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   const SizedBox(height: 8),
                   Text(
                     'Instagram Automation, Simplified',
-                    style: TextStyle(fontSize: 15, color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w400),
+                    style: TextStyle(fontSize: 15, color: Colors.white.withValues(alpha: 0.8), fontWeight: FontWeight.w400),
                   ),
                   const SizedBox(height: 60),
                   if (_hasError) ...[
                     Text(
                       'Connection failed',
-                      style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9)),
+                      style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9)),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -111,12 +111,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: () => context.go('/login'),
-                      child: Text('Go to Login', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14)),
+                      child: Text('Go to Login', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14)),
                     ),
                   ] else
                     SizedBox(
                       width: 36, height: 36,
-                      child: CircularProgressIndicator(color: Colors.white.withOpacity(0.7), strokeWidth: 2.5),
+                      child: CircularProgressIndicator(color: Colors.white.withValues(alpha: 0.7), strokeWidth: 2.5),
                     ),
                 ],
               ),

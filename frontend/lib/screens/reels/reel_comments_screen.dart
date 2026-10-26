@@ -27,7 +27,15 @@ class _ReelCommentsScreenState extends State<ReelCommentsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CommentProvider>().fetchComments(widget.mediaId, reset: true);
+      final initialCount = widget.media?.commentsCount;
+      if (initialCount != null && initialCount > 0) {
+        context.read<CommentProvider>().setTotalCommentsCount(initialCount);
+      }
+      context.read<CommentProvider>().loadAllComments(
+        widget.mediaId,
+        reset: true,
+        initialTotalCount: initialCount,
+      );
     });
     _scrollCtrl.addListener(_onScroll);
   }
@@ -35,7 +43,7 @@ class _ReelCommentsScreenState extends State<ReelCommentsScreen> {
   void _onScroll() {
     if (_scrollCtrl.position.pixels >= _scrollCtrl.position.maxScrollExtent - 200) {
       final p = context.read<CommentProvider>();
-      if (p.hasMore && !p.loading) {
+      if (p.hasMore && !p.loading && !p.isLoadingAll) {
         p.fetchComments(widget.mediaId);
       }
     }
@@ -53,16 +61,24 @@ class _ReelCommentsScreenState extends State<ReelCommentsScreen> {
     final provider = context.watch<CommentProvider>();
     final media    = widget.media;
 
+    final totalCount = (provider.totalCommentsCount != null && provider.totalCommentsCount! > 0)
+        ? (provider.comments.length > provider.totalCommentsCount!
+            ? provider.comments.length
+            : provider.totalCommentsCount!)
+        : (media != null && media.commentsCount > 0
+            ? (provider.comments.length > media.commentsCount
+                ? provider.comments.length
+                : media.commentsCount)
+            : provider.comments.length);
+
+    final titleText = totalCount > 0
+        ? 'Comments ($totalCount)'
+        : (provider.loading ? 'Comments' : 'Comments (0)');
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(
-          provider.comments.isNotEmpty
-              ? 'Comments (${provider.comments.length})'
-              : (media != null && media.commentsCount > 0
-                  ? 'Comments (${media.commentsCount})'
-                  : 'Comments'),
-        ),
+        title: Text(titleText),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () {
@@ -74,7 +90,7 @@ class _ReelCommentsScreenState extends State<ReelCommentsScreen> {
           },
         ),
         actions: [
-          if (provider.loading)
+          if (provider.loading || provider.isLoadingAll)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
               child: Center(
@@ -85,20 +101,59 @@ class _ReelCommentsScreenState extends State<ReelCommentsScreen> {
                 ),
               ),
             )
-          else
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.bolt_rounded, color: AppColors.primary),
+              tooltip: 'Process Existing Comments',
+              onPressed: () {
+                context.push('/reels/${widget.mediaId}/backfill', extra: {
+                  'media': widget.media,
+                });
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.refresh_rounded),
-              onPressed: () => context.read<CommentProvider>().fetchComments(widget.mediaId, reset: true),
+              tooltip: 'Refresh comments',
+              onPressed: () => context.read<CommentProvider>().loadAllComments(
+                widget.mediaId,
+                reset: true,
+                initialTotalCount: widget.media?.commentsCount,
+              ),
             ),
+          ],
         ],
       ),
       body: Column(
         children: [
           // ── Media Header ───────────────────────────────────────────────
-          if (media != null) _MediaHeader(media: media),
+          if (media != null) _MediaHeader(media: media, totalCount: totalCount),
 
           // ── Filter Tabs ────────────────────────────────────────────────
-          _FilterTabs(provider: provider),
+          _FilterTabs(provider: provider, totalCount: totalCount),
+
+          // ── Background Loading Indicator ───────────────────────────────
+          if (provider.isLoadingAll)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              color: AppColors.primary.withValues(alpha: 0.08),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Loading all comments... (${provider.comments.length} of $totalCount loaded)',
+                      style: const TextStyle(fontSize: 11, color: AppColors.primary, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
           // ── Search Bar ─────────────────────────────────────────────────
           _SearchBar(
@@ -124,7 +179,7 @@ class _ReelCommentsScreenState extends State<ReelCommentsScreen> {
         title: 'Could not load comments',
         subtitle: provider.error,
         actionLabel: 'Retry',
-        onAction: () => provider.fetchComments(widget.mediaId, reset: true),
+        onAction: () => provider.loadAllComments(widget.mediaId, reset: true, initialTotalCount: widget.media?.commentsCount),
       );
     }
 
@@ -141,7 +196,7 @@ class _ReelCommentsScreenState extends State<ReelCommentsScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () => provider.fetchComments(widget.mediaId, reset: true),
+      onRefresh: () => provider.loadAllComments(widget.mediaId, reset: true, initialTotalCount: widget.media?.commentsCount),
       color: AppColors.primary,
       child: ListView.builder(
         controller: _scrollCtrl,
@@ -178,15 +233,17 @@ class _ReelCommentsScreenState extends State<ReelCommentsScreen> {
 // ── Media Header ──────────────────────────────────────────────────────────────
 class _MediaHeader extends StatelessWidget {
   final InstagramMedia media;
-  const _MediaHeader({required this.media});
+  final int totalCount;
+  const _MediaHeader({required this.media, required this.totalCount});
 
   @override
   Widget build(BuildContext context) {
+    final effectiveCommentsCount = totalCount > 0 ? totalCount : media.commentsCount;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: AppColors.surface,
-        border: const Border(bottom: BorderSide(color: AppColors.border)),
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -211,8 +268,8 @@ class _MediaHeader extends StatelessWidget {
                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   maxLines: 1, overflow: TextOverflow.ellipsis,
                 ),
-                if (media.commentsCount > 0)
-                  Text('${media.commentsCount} total comments',
+                if (effectiveCommentsCount > 0)
+                  Text('$effectiveCommentsCount total comments',
                       style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               ],
             ),
@@ -236,10 +293,12 @@ class _PlaceholderThumb extends StatelessWidget {
 // ── Filter Tabs ───────────────────────────────────────────────────────────────
 class _FilterTabs extends StatelessWidget {
   final CommentProvider provider;
-  const _FilterTabs({required this.provider});
+  final int totalCount;
+  const _FilterTabs({required this.provider, required this.totalCount});
 
   @override
   Widget build(BuildContext context) {
+    final allCount = totalCount > provider.comments.length ? totalCount : provider.comments.length;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       color: AppColors.surface,
@@ -248,7 +307,7 @@ class _FilterTabs extends StatelessWidget {
         child: Row(
           children: [
             _FilterChip(
-              label: 'All (${provider.comments.length})',
+              label: 'All ($allCount)',
               selected: provider.filter == CommentFilter.all,
               onTap: () => provider.setFilter(CommentFilter.all),
             ),
@@ -263,6 +322,18 @@ class _FilterTabs extends StatelessWidget {
               label: 'Replied (${provider.repliedCount})',
               selected: provider.filter == CommentFilter.replied,
               onTap: () => provider.setFilter(CommentFilter.replied),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'Failed (${provider.failedCount})',
+              selected: provider.filter == CommentFilter.failed,
+              onTap: () => provider.setFilter(CommentFilter.failed),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'Skipped (${provider.skippedCount})',
+              selected: provider.filter == CommentFilter.skipped,
+              onTap: () => provider.setFilter(CommentFilter.skipped),
             ),
           ],
         ),
@@ -354,7 +425,7 @@ class _CommentCard extends StatelessWidget {
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,7 +469,7 @@ class _CommentCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
+                    color: AppColors.success.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text('Replied',
@@ -414,11 +485,56 @@ class _CommentCard extends StatelessWidget {
                 },
                 itemBuilder: (_) => [
                   const PopupMenuItem(value: 'reply', child: Text('Reply to Comment')),
-                  const PopupMenuItem(value: 'dm',    child: Text('Send DM')),
+                  PopupMenuItem(
+                    value: 'dm',
+                    child: Text(comment.isEligibleForDm ? 'Send DM' : 'Send DM (Ineligible)'),
+                  ),
                 ],
               ),
             ],
           ),
+
+          // ── Status Badges Row (Public Reply vs Private DM) ───────────
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              _ActionStatusBadge(
+                type: 'Public Reply',
+                status: comment.publicReplyStatus ?? (comment.isReplied ? 'sent' : 'none'),
+              ),
+              _ActionStatusBadge(
+                type: 'Private DM',
+                status: comment.dmStatus ?? (comment.isEligibleForDm ? 'none' : 'ineligible'),
+              ),
+            ],
+          ),
+
+          // ── Ineligible Explanation Banner ────────────────────────────
+          if (!comment.isEligibleForDm && comment.dmIneligibleReason != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF3C7),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFCD34D)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 14, color: Color(0xFFB45309)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      comment.dmIneligibleReason!,
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF92400E)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           // ── Actions Row ──────────────────────────────────────────────
           const SizedBox(height: 10),
@@ -432,13 +548,97 @@ class _CommentCard extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               _CommentActionBtn(
-                label: 'Send DM',
-                color: AppColors.info,
-                onTap: onSendDm,
+                label: comment.isEligibleForDm ? 'Send DM' : 'DM Ineligible',
+                color: comment.isEligibleForDm ? AppColors.info : AppColors.textHint,
+                onTap: () {
+                  if (comment.isEligibleForDm) {
+                    onSendDm();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(comment.dmIneligibleReason ?? 'This comment is ineligible for a private DM.'),
+                        backgroundColor: AppColors.warning,
+                      ),
+                    );
+                  }
+                },
                 loading: comment.isSendingDm,
               ),
             ],
           ),
+
+          // ── Nested Replies Section ───────────────────────────────────
+          if (comment.replies.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.panelGray,
+                borderRadius: BorderRadius.circular(10),
+                border: Border(
+                  left: BorderSide(color: AppColors.primary.withValues(alpha: 0.5), width: 3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.subdirectory_arrow_right_rounded, size: 14, color: AppColors.textSecondary),
+                      const SizedBox(width: 4),
+                      Text(
+                        comment.replies.length == 1
+                            ? '1 Reply'
+                            : '${comment.replies.length} Replies',
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ...comment.replies.map((reply) => Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _CommentAvatar(username: reply.username ?? 'User', size: 26),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      reply.username ?? 'User',
+                                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (reply.timeAgo.isNotEmpty) ...[
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      reply.timeAgo,
+                                      style: const TextStyle(fontSize: 10, color: AppColors.textHint),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                reply.text,
+                                style: const TextStyle(fontSize: 12, color: AppColors.textPrimary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  )),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -448,7 +648,8 @@ class _CommentCard extends StatelessWidget {
 class _CommentAvatar extends StatelessWidget {
   final String username;
   final String? imageUrl;
-  const _CommentAvatar({required this.username, this.imageUrl});
+  final double size;
+  const _CommentAvatar({required this.username, this.imageUrl, this.size = 38});
 
   Color _colorForName(String name) {
     final colors = [
@@ -456,7 +657,9 @@ class _CommentAvatar extends StatelessWidget {
       const Color(0xFFF59E0B), const Color(0xFFEF4444), const Color(0xFF8B5CF6),
     ];
     int hash = 0;
-    for (var c in name.codeUnits) hash += c;
+    for (var c in name.codeUnits) {
+      hash += c;
+    }
     return colors[hash % colors.length];
   }
 
@@ -467,7 +670,7 @@ class _CommentAvatar extends StatelessWidget {
       return ClipOval(
         child: CachedNetworkImage(
           imageUrl: imageUrl!,
-          width: 38, height: 38, fit: BoxFit.cover,
+          width: size, height: size, fit: BoxFit.cover,
           placeholder: (_, __) => _fallback(initial),
           errorWidget: (_, __, ___) => _fallback(initial),
         ),
@@ -478,9 +681,18 @@ class _CommentAvatar extends StatelessWidget {
 
   Widget _fallback(String initial) {
     return Container(
-      width: 38, height: 38,
+      width: size, height: size,
       decoration: BoxDecoration(color: _colorForName(username), shape: BoxShape.circle),
-      child: Center(child: Text(initial, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15))),
+      child: Center(
+        child: Text(
+          initial,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+            fontSize: (size * 0.4).clamp(9.0, 15.0),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -499,9 +711,9 @@ class _CommentActionBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
         ),
         child: loading
             ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 1.5, color: color))
@@ -510,3 +722,81 @@ class _CommentActionBtn extends StatelessWidget {
     );
   }
 }
+
+class _ActionStatusBadge extends StatelessWidget {
+  final String type;
+  final String status;
+
+  const _ActionStatusBadge({required this.type, required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    Color bg;
+    Color fg;
+    IconData icon;
+    String label;
+
+    switch (status.toLowerCase()) {
+      case 'sent':
+      case 'success':
+        bg = AppColors.success.withValues(alpha: 0.12);
+        fg = AppColors.success;
+        icon = Icons.check_circle_outline_rounded;
+        label = '$type: Sent';
+        break;
+      case 'failed':
+      case 'error':
+        bg = AppColors.error.withValues(alpha: 0.12);
+        fg = AppColors.error;
+        icon = Icons.error_outline_rounded;
+        label = '$type: Failed';
+        break;
+      case 'ineligible':
+        bg = AppColors.warning.withValues(alpha: 0.12);
+        fg = AppColors.warning;
+        icon = Icons.block_rounded;
+        label = '$type: Ineligible';
+        break;
+      case 'skipped':
+        bg = AppColors.warning.withValues(alpha: 0.12);
+        fg = AppColors.warning;
+        icon = Icons.skip_next_rounded;
+        label = '$type: Skipped';
+        break;
+      case 'pending':
+      case 'processing':
+        bg = AppColors.info.withValues(alpha: 0.12);
+        fg = AppColors.info;
+        icon = Icons.hourglass_top_rounded;
+        label = '$type: Processing';
+        break;
+      default:
+        bg = AppColors.panelGray;
+        fg = AppColors.textSecondary;
+        icon = Icons.remove_circle_outline_rounded;
+        label = '$type: None';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: fg.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: fg),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: fg),
+          ),
+        ],
+      ),
+    );
+  }
+}
+

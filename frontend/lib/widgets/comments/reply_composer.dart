@@ -232,9 +232,9 @@ class _ReplyComposerSheetState extends State<ReplyComposerSheet> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.error.withOpacity(0.08),
+                          color: AppColors.error.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
@@ -258,8 +258,8 @@ class _ReplyComposerSheetState extends State<ReplyComposerSheet> {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
               decoration: BoxDecoration(
                 color: AppColors.surface,
-                border: Border(top: BorderSide(color: AppColors.border)),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))],
+                border: const Border(top: BorderSide(color: AppColors.border)),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, -4))],
               ),
               child: Row(
                 children: [
@@ -309,10 +309,10 @@ class _QuickActionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // These are informational chip labels; full actions are in the bottom bar
-    return Wrap(
+    return const Wrap(
       spacing: 8,
       runSpacing: 6,
-      children: const [
+      children: [
         _QuickChip(label: 'Reply to Comment', icon: Icons.reply_rounded, color: AppColors.primary),
         _QuickChip(label: 'Send DM', icon: Icons.send_rounded, color: AppColors.info),
         _QuickChip(label: 'AI Suggested', icon: Icons.auto_awesome_rounded, color: AppColors.success),
@@ -332,9 +332,9 @@ class _QuickChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -366,7 +366,7 @@ class _SuggestionCard extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: Row(
           children: [
@@ -556,7 +556,9 @@ class _Fallback extends StatelessWidget {
       const Color(0xFFF59E0B), const Color(0xFFEF4444), const Color(0xFF8B5CF6),
     ];
     int hash = 0;
-    for (var c in name.codeUnits) hash += c;
+    for (var c in name.codeUnits) {
+      hash += c;
+    }
     return colors[hash % colors.length];
   }
 
@@ -569,7 +571,7 @@ class _Fallback extends StatelessWidget {
       child: Center(
         child: Text(
           initial,
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: _size * 0.4),
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: _size * 0.4),
         ),
       ),
     );

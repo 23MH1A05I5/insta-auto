@@ -38,3 +38,20 @@ services:
         value: "true"
       - key: ENABLE_PRIVATE_REPLY
         value: "true"
+      # ── In-app APK update metadata (set real values in the Render dashboard) ──
+      - key: APP_VERSION
+        sync: false
+      - key: APP_VERSION_CODE
+        sync: false
+      - key: APK_PUBLIC_URL
+        sync: false
+      - key: APK_SHA256
+        sync: false
+      - key: APK_ALLOWED_HOST
+        sync: false
+      - key: APK_SIZE_BYTES
+        sync: false
+      - key: APP_UPDATE_MANDATORY
+        value: "false"
+      - key: APP_RELEASE_NOTES
+        sync: false

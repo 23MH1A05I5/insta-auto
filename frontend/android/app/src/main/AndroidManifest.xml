@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- In-app updates: lets Android ask the user to allow installs from this app.
+         Every install still requires explicit user confirmation. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
     <application
         android:label="InstaAuto"
         android:name="${applicationName}"
@@ -39,6 +42,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Receives PackageInstaller session results for in-app updates -->
+        <receiver
+            android:name=".InstallResultReceiver"
+            android:exported="false" />
     </application>
     <!-- Required for Android 11+ (API 30+) package visibility to open browsers and apps -->
     <queries>

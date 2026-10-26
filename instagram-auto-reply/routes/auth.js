@@ -60,14 +60,7 @@ router.delete("/account", authenticate, async (req, res) => {
     const userId = req.user._id;
     const igUserId = req.user.instagram?.userId;
 
-    // Delete activity logs
-    try {
-      const Activity = require("../models/Activity");
-      await Activity.deleteMany({ userId });
-      if (igUserId) await Activity.deleteMany({ igUserId });
-    } catch (_) {}
-
-    // Delete automations
+    // Delete automations and their embedded activity logs
     try {
       const Automation = require("../models/Automation");
       await Automation.deleteMany({ userId });

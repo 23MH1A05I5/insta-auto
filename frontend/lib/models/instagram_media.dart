@@ -31,16 +31,16 @@ class InstagramMedia {
 
   factory InstagramMedia.fromJson(Map<String, dynamic> json) {
     return InstagramMedia(
-      id            : json['id']             as String,
+      id            : (json['id'] ?? '').toString(),
       mediaType     : json['media_type']     as String? ?? 'IMAGE',
       mediaUrl      : json['media_url']      as String?,
       thumbnailUrl  : json['thumbnail_url']  as String?,
       caption       : json['caption']        as String?,
       timestamp     : json['timestamp']      as String?,
       permalink     : json['permalink']      as String?,
-      likeCount     : json['like_count']     as int? ?? 0,
-      commentsCount : json['comments_count'] as int? ?? 0,
-      viewsCount    : json['video_views']    as int? ?? 0,
+      likeCount     : (json['like_count']     as num?)?.toInt() ?? 0,
+      commentsCount : (json['comments_count'] as num?)?.toInt() ?? 0,
+      viewsCount    : (json['video_views']    as num?)?.toInt() ?? 0,
     );
   }
 

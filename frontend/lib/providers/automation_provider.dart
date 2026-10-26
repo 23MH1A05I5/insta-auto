@@ -52,18 +52,45 @@ class AutomationProvider extends ChangeNotifier {
 
   // ── Analytics ─────────────────────────────────────────────────────────────────
   AnalyticsSummary? _analytics;
-  AnalyticsSummary? get analytics => _analytics;
+  AnalyticsSummary? get analytics {
+    if (_analytics != null) return _analytics;
+    if (_automations.isNotEmpty) {
+      int totalComments = 0;
+      int replies = 0;
+      int dms = 0;
+      int failed = 0;
+      for (final a in _automations) {
+        totalComments += a.stats.commentsReceived;
+        replies += a.stats.repliesSent;
+        dms += a.stats.dmsSent;
+        failed += a.stats.failed;
+      }
+      return AnalyticsSummary(
+        totalAutomations: _automations.length,
+        activeAutomations: _automations.where((a) => a.isActive).length,
+        commentsReceived: totalComments,
+        repliesSent: replies,
+        dmsSent: dms,
+        failedActions: failed,
+      );
+    }
+    return null;
+  }
 
   // ── Activity ──────────────────────────────────────────────────────────────────
   List<ActivityEntry> _activity = [];
   bool   _loadingActivity = false;
   String? _activityError;
   int    _activityTotal = 0;
+  String? _retryingActivityId;
+  bool    _resendingAll = false;
 
-  List<ActivityEntry> get activity        => _activity;
-  bool                get loadingActivity => _loadingActivity;
-  String?             get activityError   => _activityError;
-  int                 get activityTotal   => _activityTotal;
+  List<ActivityEntry> get activity           => _activity;
+  bool                get loadingActivity    => _loadingActivity;
+  String?             get activityError      => _activityError;
+  int                 get activityTotal      => _activityTotal;
+  String?             get retryingActivityId => _retryingActivityId;
+  bool                get resendingAll       => _resendingAll;
 
   // ── Wizard state (used across create-automation screens) ─────────────────────
   InstagramMedia? _selectedMedia;
@@ -109,10 +136,17 @@ class AutomationProvider extends ChangeNotifier {
     }
   }
 
+  String? _saveError;
+  String? get saveError => _saveError;
+
   Future<Automation?> saveAutomation({String status = 'draft'}) async {
     final media = _selectedMedia;
-    if (media == null) return null;
+    if (media == null) {
+      _saveError = 'No media selected for automation';
+      return null;
+    }
 
+    _saveError = null;
     final data = {
       'mediaId'       : media.id,
       'mediaType'     : media.mediaType,
@@ -137,7 +171,12 @@ class AutomationProvider extends ChangeNotifier {
       await fetchAutomations();
       return automation;
     } on DioException catch (e) {
+      _saveError = e.response?.data?['error'] ?? e.message ?? 'Failed to save automation';
       debugPrint('[saveAutomation] ${e.response?.data}');
+      return null;
+    } catch (e) {
+      _saveError = e.toString();
+      debugPrint('[saveAutomation error] $e');
       return null;
     }
   }
@@ -181,15 +220,18 @@ class AutomationProvider extends ChangeNotifier {
   Future<void> fetchAnalytics() async {
     try {
       final res = await _api.getAnalyticsSummary();
-      _analytics = AnalyticsSummary.fromJson(res['summary']);
-      notifyListeners();
-    } catch (_) {}
+      if (res['summary'] != null) {
+        _analytics = AnalyticsSummary.fromJson(res['summary']);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('⚠️ [fetchAnalytics error] $e');
+    }
   }
 
   // ── Activity ──────────────────────────────────────────────────────────────────
   Future<void> fetchActivity({bool reset = false, bool silent = false}) async {
     if (!silent) {
-      if (reset) _activity = [];
       _loadingActivity = true;
       _activityError = null;
       notifyListeners();
@@ -197,13 +239,94 @@ class AutomationProvider extends ChangeNotifier {
     try {
       final page = reset ? 1 : (_activity.length ~/ 50) + 1;
       final res  = await _api.getActivity(page: page);
-      final items = (res['activity'] as List).map((e) => ActivityEntry.fromJson(e)).toList();
-      if (reset) _activity = items; else _activity.addAll(items);
-      _activityTotal = res['total'] as int? ?? 0;
+      if (res['ok'] == false) {
+        if (!silent) _activityError = res['error']?.toString() ?? 'Failed to load activity';
+        return;
+      }
+      final rawList = res['activity'] as List? ?? [];
+      final items = rawList
+          .map((e) => ActivityEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+      if (reset) {
+        _activity = items;
+      } else {
+        _activity.addAll(items);
+      }
+      _activityTotal = res['total'] as int? ?? _activity.length;
     } on DioException catch (e) {
-      if (!silent) _activityError = e.response?.data?['error'] ?? 'Failed to load activity';
+      if (!silent) _activityError = e.response?.data?['error']?.toString() ?? e.message ?? 'Failed to load activity';
+    } catch (e) {
+      if (!silent) _activityError = 'Failed to load activity: $e';
     } finally {
       if (!silent) _loadingActivity = false;
+      notifyListeners();
+    }
+  }
+
+  // ── Retry DM ──────────────────────────────────────────────────────────────────
+  Future<Map<String, dynamic>> retryDm(String activityId) async {
+    if (_retryingActivityId != null) {
+      return {'ok': false, 'error': 'A retry is already in progress'};
+    }
+    _retryingActivityId = activityId;
+    notifyListeners();
+    try {
+      final res = await _api.retryDm(activityId);
+      if (res['ok'] == true) {
+        if (res['activity'] != null) {
+          final updated = ActivityEntry.fromJson(Map<String, dynamic>.from(res['activity'] as Map));
+          final idx = _activity.indexWhere((e) => (e.id == activityId) || (e.commentId == activityId));
+          if (idx != -1) {
+            _activity[idx] = updated;
+          } else {
+            // Not in local visible list: insert updated record and refresh
+            _activity.insert(0, updated);
+            await fetchActivity(reset: true, silent: true);
+          }
+        } else {
+          await fetchActivity(reset: true, silent: true);
+        }
+        await fetchAnalytics();
+      }
+      return res;
+    } on DioException catch (e) {
+      final err = e.response?.data?['error'] ?? e.message ?? 'Retry DM failed';
+      if (e.response?.data?['activity'] != null) {
+        try {
+          final updated = ActivityEntry.fromJson(Map<String, dynamic>.from(e.response!.data['activity'] as Map));
+          final idx = _activity.indexWhere((e) => (e.id == activityId) || (e.commentId == activityId));
+          if (idx != -1) {
+            _activity[idx] = updated;
+          } else {
+            _activity.insert(0, updated);
+          }
+        } catch (_) {}
+      }
+      return {'ok': false, 'error': err};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    } finally {
+      _retryingActivityId = null;
+      notifyListeners();
+    }
+  }
+
+  // ── Resend All Failed Actions ────────────────────────────────────────────────
+  Future<Map<String, dynamic>> resendAllFailed() async {
+    _resendingAll = true;
+    notifyListeners();
+    try {
+      final res = await _api.resendAllFailed();
+      await fetchActivity(reset: true, silent: true);
+      await fetchAnalytics();
+      return res;
+    } on DioException catch (e) {
+      final err = e.response?.data?['error'] ?? e.message ?? 'Bulk resend failed';
+      return {'ok': false, 'error': err};
+    } catch (e) {
+      return {'ok': false, 'error': e.toString()};
+    } finally {
+      _resendingAll = false;
       notifyListeners();
     }
   }
@@ -249,6 +372,42 @@ class AutomationProvider extends ChangeNotifier {
     _draftPublicReply = a.publicReply;
     _draftOpeningDm   = a.openingDm;
     _draftFinalDm     = a.finalDm;
+    notifyListeners();
+  }
+
+  void reset() {
+    _automations = [];
+    _loadingAutomations = false;
+    _automationsError = null;
+    _media = [];
+    _loadingMedia = false;
+    _mediaError = null;
+    _mediaCursor = null;
+    _analytics = null;
+    _activity = [];
+    _loadingActivity = false;
+    _activityError = null;
+    _activityTotal = 0;
+    _retryingActivityId = null;
+    _resendingAll = false;
+    _selectedMedia = null;
+    _draftTrigger = const TriggerRule();
+    _draftPublicReply = const ReplyConfig(
+      enabled: true,
+      messages: [
+        '@{username} Sent you the details in DMs! 📩',
+        '@{username} Just sent you a private message with everything! ✨',
+        '@{username} Check your DM for the direct link 💜',
+      ],
+    );
+    _draftOpeningDm = const DmConfig(
+      enabled: true,
+      message: "Hey there! I'm so happy you're here, thanks so much for your interest 😊\n\nClick below and I'll send you the link in just a sec ✨",
+      buttonText: 'Send me the link',
+    );
+    _draftFinalDm = const DmConfig(enabled: true);
+    _editingAutomationId = null;
+    _saveError = null;
     notifyListeners();
   }
 }

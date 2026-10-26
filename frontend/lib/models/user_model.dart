@@ -15,11 +15,11 @@ class InstagramAccount {
 
   factory InstagramAccount.fromJson(Map<String, dynamic> json) {
     return InstagramAccount(
-      userId      : json['userId']      as String,
-      username    : json['username']    as String,
+      userId      : (json['userId'] ?? '').toString(),
+      username    : (json['username'] ?? '').toString(),
       accountType : json['accountType'] as String?,
-      connectedAt : json['connectedAt'] != null ? DateTime.tryParse(json['connectedAt']) : null,
-      tokenExpiry : json['tokenExpiry'] != null ? DateTime.tryParse(json['tokenExpiry']) : null,
+      connectedAt : json['connectedAt'] != null ? DateTime.tryParse(json['connectedAt'].toString()) : null,
+      tokenExpiry : json['tokenExpiry'] != null ? DateTime.tryParse(json['tokenExpiry'].toString()) : null,
     );
   }
 
@@ -46,12 +46,12 @@ class AppUser {
   factory AppUser.fromJson(Map<String, dynamic> json) {
     final ig = json['instagram'];
     return AppUser(
-      id        : json['_id']       as String,
-      name      : json['name']      as String,
-      email     : json['email']     as String,
-      createdAt : json['createdAt'] != null ? DateTime.tryParse(json['createdAt']) : null,
-      instagram : (ig != null && ig['userId'] != null)
-          ? InstagramAccount.fromJson(ig as Map<String, dynamic>)
+      id        : (json['_id'] ?? json['id'] ?? '').toString(),
+      name      : (json['name'] ?? '').toString(),
+      email     : (json['email'] ?? '').toString(),
+      createdAt : json['createdAt'] != null ? DateTime.tryParse(json['createdAt'].toString()) : null,
+      instagram : (ig != null && ig is Map && (ig['userId'] != null || ig['username'] != null))
+          ? InstagramAccount.fromJson(Map<String, dynamic>.from(ig))
           : null,
     );
   }

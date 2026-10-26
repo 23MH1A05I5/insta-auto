@@ -1,6 +1,39 @@
 const router     = require("express").Router();
 const Automation = require("../models/Automation");
+const BackfillJob = require("../models/BackfillJob");
+const BackfillService = require("../services/backfillService");
 const { authenticate } = require("../middleware/auth");
+
+// ── GET /api/automations/backfill/jobs/:jobId ─────────────────────────────────
+router.get("/backfill/jobs/:jobId", authenticate, async (req, res) => {
+  try {
+    const job = await BackfillJob.findOne({ _id: req.params.jobId, userId: req.user._id });
+    if (!job) return res.status(404).json({ ok: false, error: "Job not found" });
+    return res.json({ ok: true, job });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── POST /api/automations/backfill/jobs/:jobId/retry ──────────────────────────
+router.post("/backfill/jobs/:jobId/retry", authenticate, async (req, res) => {
+  try {
+    const result = await BackfillService.retryJob(req.params.jobId, req.user._id);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: err.message, errorCode: err.code || "VALIDATION_ERROR" });
+  }
+});
+
+// ── POST /api/automations/backfill/jobs/:jobId/resume ─────────────────────────
+router.post("/backfill/jobs/:jobId/resume", authenticate, async (req, res) => {
+  try {
+    const result = await BackfillService.resumeJob(req.params.jobId, req.user._id);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: err.message, errorCode: err.code || "VALIDATION_ERROR" });
+  }
+});
 
 // ── GET /api/automations ──────────────────────────────────────────────────────
 router.get("/", authenticate, async (req, res) => {
@@ -105,6 +138,37 @@ router.patch("/:id/status", authenticate, async (req, res) => {
     );
     if (!automation) return res.status(404).json({ ok: false, error: "Not found" });
     return res.json({ ok: true, automation });
+  } catch (err) {
+    return res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+// ── POST /api/automations/:id/backfill/preview ────────────────────────────────
+router.post("/:id/backfill/preview", authenticate, async (req, res) => {
+  try {
+    const preview = await BackfillService.preview(req.user._id, req.params.id, req.body?.mediaId);
+    return res.json({ ok: true, ...preview, preview });
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: err.message, errorCode: err.code || "VALIDATION_ERROR" });
+  }
+});
+
+// ── POST /api/automations/:id/backfill/start ──────────────────────────────────
+router.post("/:id/backfill/start", authenticate, async (req, res) => {
+  try {
+    const { mediaId, selectedCommentIds } = req.body || {};
+    const result = await BackfillService.startJob(req.user._id, req.params.id, mediaId, selectedCommentIds);
+    return res.json(result);
+  } catch (err) {
+    return res.status(400).json({ ok: false, error: err.message, errorCode: err.code || "VALIDATION_ERROR" });
+  }
+});
+
+// ── GET /api/automations/:id/backfill/latest ──────────────────────────────────
+router.get("/:id/backfill/latest", authenticate, async (req, res) => {
+  try {
+    const job = await BackfillJob.findOne({ automationId: req.params.id, userId: req.user._id }).sort({ createdAt: -1 });
+    return res.json({ ok: true, job });
   } catch (err) {
     return res.status(500).json({ ok: false, error: err.message });
   }

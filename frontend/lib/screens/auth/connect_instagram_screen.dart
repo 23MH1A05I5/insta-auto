@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -169,8 +168,10 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
       if (!mounted) { timer.cancel(); return; }
 
       try {
-        await context.read<AuthProvider>().refreshUser();
-        final user = context.read<AuthProvider>().user;
+        final auth = context.read<AuthProvider>();
+        await auth.refreshUser();
+        if (!mounted) { timer.cancel(); return; }
+        final user = auth.user;
         if (user?.hasInstagram == true) {
           timer.cancel();
           _onOAuthSuccess();
@@ -193,8 +194,10 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
   Future<void> _retryCheck() async {
     setState(() { _connecting = true; _error = null; });
     try {
-      await context.read<AuthProvider>().refreshUser();
-      final user = context.read<AuthProvider>().user;
+      final auth = context.read<AuthProvider>();
+      await auth.refreshUser();
+      if (!mounted) return;
+      final user = auth.user;
       if (user?.hasInstagram == true) {
         _onOAuthSuccess();
         return;
@@ -305,9 +308,9 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.success.withOpacity(0.08),
+                color: AppColors.success.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColors.success.withOpacity(0.2)),
+                border: Border.all(color: AppColors.success.withValues(alpha: 0.2)),
               ),
               child: const Row(
                 children: [
@@ -365,7 +368,7 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.panelGray.withOpacity(0.5),
+        color: AppColors.panelGray.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
       ),
@@ -374,7 +377,7 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
         children: [
           Container(
             width: 32, height: 32,
-            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, color: AppColors.primary, size: 18),
           ),
           const SizedBox(width: 10),
@@ -394,7 +397,7 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: AppColors.success.withOpacity(0.12), borderRadius: BorderRadius.circular(6)),
+                      decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
                       child: const Text('Required', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: AppColors.success)),
                     ),
                   ],
@@ -442,7 +445,7 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
                 children: [
                   Container(
                     width: 80, height: 80,
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
                     child: const Icon(Icons.link, size: 44, color: Colors.white),
                   ),
                   const SizedBox(height: 20),
@@ -450,7 +453,7 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
                   const SizedBox(height: 8),
                   Text(
                     'Authorize InstaAuto to manage your Instagram comments and DMs.',
-                    style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.85)),
+                    style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.85)),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -480,7 +483,7 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
                     child: Row(children: [
                       Container(
                         width: 28, height: 28,
-                        decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), shape: BoxShape.circle),
+                        decoration: BoxDecoration(color: AppColors.success.withValues(alpha: 0.1), shape: BoxShape.circle),
                         child: Icon(e.$2, color: AppColors.success, size: 16),
                       ),
                       const SizedBox(width: 10),
@@ -547,15 +550,15 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: const Color(0xFFFCD34D)),
               ),
-              child: Row(
+              child: const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.lightbulb_outline, color: Color(0xFFB45309), size: 20),
-                  const SizedBox(width: 10),
+                  Icon(Icons.lightbulb_outline, color: Color(0xFFB45309), size: 20),
+                  SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
                           'Mobile Browser Tip',
                           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF92400E)),
@@ -584,9 +587,9 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.06),
+                  color: AppColors.primary.withValues(alpha: 0.06),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.25)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -642,9 +645,9 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.05),
+                  color: AppColors.primary.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   children: [
@@ -659,7 +662,7 @@ class _ConnectInstagramScreenState extends State<ConnectInstagramScreen> with Wi
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    Text(
+                    const Text(
                       'Complete authorization in your browser tab. We will automatically detect your connection!',
                       style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                       textAlign: TextAlign.center,
